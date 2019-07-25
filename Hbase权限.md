@@ -20,6 +20,40 @@ hbase-server/src/main/java/org/apache/hadoop/hbase/master/HMaster.java
 hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/AccessController.java
 hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/AccessChecker.java
 hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/TableAuthManager.java
+
+public boolean authorize(User user, String namespace, Permission.Action action) {
+  // Global authorizations supercede namespace level
+  if (authorize(user, action)) {
+    return true;
+  }
+  // Check namespace permissions
+  PermissionCache<TablePermission> tablePerms = nsCache.get(namespace);
+  if (tablePerms != null) {
+    List<TablePermission> userPerms = tablePerms.getUser(user.getShortName());
+    if (authorize(userPerms, namespace, action)) {
+      return true;
+    }
+    String[] groupNames = user.getGroupNames();
+    if (groupNames != null) {
+      for (String group : groupNames) {
+        List<TablePermission> groupPerms = tablePerms.getGroup(group);
+        if (authorize(groupPerms, namespace, action)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+public String getShortUserName() {
+    Iterator i$ = this.subject.getPrincipals(User.class).iterator();
+    if (i$.hasNext()) {
+        User p = (User)i$.next();
+        return p.getShortName();
+    } else {
+        return null;
+    }
+}
 ```
 
 - HMaster处理逻辑

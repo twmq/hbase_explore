@@ -54,6 +54,16 @@ public String getShortUserName() {
         return null;
     }
 }
+public String[] getGroupNames() {
+  if (cache != null) {
+    try {
+      return this.cache.get(getShortName());
+    } catch (ExecutionException e) {
+      return new String[0];
+    }
+  }
+  return ugi.getGroupNames();
+}
 ```
 
 - HMaster处理逻辑
